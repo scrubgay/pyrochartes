@@ -2,10 +2,8 @@
 
 from playwright.sync_api import sync_playwright, expect
 import requests
-import time # rate-limiting functions
 import re
-
-url = r"https://www.ospo.noaa.gov/Products/land/hms.html#data"
+import argparse
 
 def save_txt(link:str, out_dir:str=r"data/") :
     print("Downloading " + link)
@@ -19,9 +17,13 @@ def generate_url(mdy:str) :
     template = "https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Fire_Points/Text/2024/01/hms_fire20240131.txt"
     date_components = re.split("(/|-)", mdy) # month = 1
 
-def scrape_page(from_date:str, to_date:str) :
+def scrape_page(from_date:str, to_date:str=None) :
+    url = r"https://www.ospo.noaa.gov/Products/land/hms.html#data"
+    if to_date is None :
+        to_date = from_date
+    
     with sync_playwright() as p :
-        browser = p.firefox.launch()
+        browser = p.firefox.launch(headless = False)
         page = browser.new_page()
         page.set_default_timeout(90000)
 
@@ -65,5 +67,22 @@ def scrape_page(from_date:str, to_date:str) :
             print("There was an error:")
             print(e)
         browser.close()
-    
-scrape_page("10/23/2023", "02/18/2024")
+
+def main() :
+    parser = argparse.ArgumentParser(description='Process start and end arguments.')
+    parser.add_argument('-s', '--start', type=str, required=True, help='Start date')
+    parser.add_argument('-e', '--end', type=str, required=True, help='End date')
+
+    args = parser.parse_args()
+
+    start = args.start
+    end = args.end
+
+    print("Start:", start)
+    print("End:", end)
+
+    scrape_page(start, end)
+
+if __name__ == "__main__" :    
+    main()
+
